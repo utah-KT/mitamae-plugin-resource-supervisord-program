@@ -1,0 +1,5 @@
+[program:<%= @name %>]
+command = <%= @command %>
+<% @settings.each do |key, value| -%>
+<%= key %> = <%= value %>
+<% end -%>
