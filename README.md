@@ -1,0 +1,1 @@
+# mitamae-plugin-resource-supervisord-program
