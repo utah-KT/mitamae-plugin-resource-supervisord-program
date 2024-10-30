@@ -2,6 +2,8 @@ module ::MItamae
   module Plugin
     module ResourceExecutor
       class SupervisordProgram < ::MItamae::ResourceExecutor::Base
+        WaitReloadError = Class.new(StandardError)
+        MAX_WAIT_RELOAD = 5
         def apply
           configure_and_reload
           MItamae.logger.info("supervisord_program[#{desired.name}] configured.")
@@ -48,7 +50,17 @@ module ::MItamae
           end
           executor = MItamae::ResourceExecutor.create(@configure, @runner)
           executor.execute(:create)
-          run_command("supervisorctl reload") if executor.send(:updated?)
+          if executor.send(:updated?)
+            run_command("supervisorctl reload")
+            retry_cnt = 0
+            loop do
+              result = run_command("supervisorctl status")
+              break if result.exit_status == 0
+              Open3.capture3("sleep 1")
+              next if retry_cnt < MAX_WAIT_RELOAD
+              raise WaitReloadError, "failed to wait supervisorctl reload"
+            end
+          end
         end
 
         def supervisord_command(action)
