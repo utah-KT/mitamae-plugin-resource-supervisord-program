@@ -52,11 +52,12 @@ module ::MItamae
           executor.execute(:create)
           if executor.send(:updated?)
             run_command("supervisorctl reload")
-            retry_cnt = 0
             loop do
-              result = run_command("supervisorctl status")
+              retry_cnt ||= 0
+              result = run_command("supervisorctl status", error: false)
               break if result.exit_status == 0
               Open3.capture3("sleep 1")
+              retry_cnt+=1
               next if retry_cnt < MAX_WAIT_RELOAD
               raise WaitReloadError, "failed to wait supervisorctl reload"
             end
